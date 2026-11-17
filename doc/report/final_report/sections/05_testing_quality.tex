@@ -3,17 +3,17 @@
 
 \subsection{Unit tests}
 
-The backend has 148 unit tests, written with \texttt{pytest}, in two families.
+The backend has 151 unit tests, written with \texttt{pytest}, in two families.
 
 \begin{itemize}
-  \item \textbf{Service and controller tests} (109 tests) replace the DAOs and the NASA API with
+  \item \textbf{Service and controller tests} (111 tests) replace the DAOs and the NASA API with
   mocks (\texttt{unittest.mock}). They need neither a database nor the network, run in a few
   seconds, and check the business rules: refusal of invalid values, import split into windows of
   seven days, pause and retry when the NASA rate limit is reached, \emph{partial} import resumed
   the day after, a single import at a time, rights of a user against an administrator\dots
   Controller tests call the endpoints with FastAPI's \texttt{TestClient} and replace the
   logged-in user with \texttt{app.dependency\_overrides}.
-  \item \textbf{DAO tests} (39 tests) run on a real PostgreSQL database, in a dedicated schema,
+  \item \textbf{DAO tests} (40 tests) run on a real PostgreSQL database, in a dedicated schema,
   \texttt{project\_test\_dao}, re-created from \texttt{data/pop\_db\_test.sql} at the start of each
   test session. A guard test checks that they never run on the application schema. Without a
   database, they are skipped instead of failing, so the other tests can still be run anywhere.
@@ -25,7 +25,7 @@ the error cases (unknown object, duplicate, wrong owner, expired token\dots).
 \subsection{Coverage}
 
 The coverage is measured on the service and DAO layers, where the logic is, with branch coverage:
-it reaches \textbf{84\,\%} with all the tests. The lines that are not covered are mainly the
+it reaches \textbf{86\,\%} with all the tests. The lines that are not covered are mainly the
 \texttt{except} blocks of the DAOs that only log a database error before raising it again, and the
 loop of the daily scheduler, which waits 24 hours.
 
@@ -39,7 +39,7 @@ uv run --all-extras coverage report
 
 At each push, a GitHub Actions pipeline (\texttt{.github/workflows/ci.yml}) starts a PostgreSQL
 service, installs the dependencies, runs all the tests with coverage, then checks the backend and
-the frontend with two tools:
+the frontend with three tools:
 
 \begin{itemize}
   \item \textbf{Ruff}, for the code style (PEP~8, imports, line length of 100) and the formatting;
@@ -72,3 +72,7 @@ was reviewed. This review found several bugs, which were fixed, each with a test
   the daily update was only triggered by the frontend, under a condition that blocked it for a
   year after the first import.
 \end{itemize}
+
+The code was then refactored without changing its behaviour: duplicated code was gathered in one
+place (conversion of database rows into business objects, creation of the database), the
+controllers only call services, and unused code was removed.
