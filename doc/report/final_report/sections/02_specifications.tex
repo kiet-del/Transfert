@@ -1,0 +1,57 @@
+\section{Delivered features}
+\label{sec:specs}
+
+The subject imposed six features (F1 to F6); we chose three optional ones (FO3, FO7 and FO8).
+Table~\ref{tab:features} sums up what is delivered.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l l X l}
+\toprule
+\textbf{Id} & \textbf{Feature} & \textbf{Delivered} & \textbf{Status} \
+\midrule
+F1 & Accounts & Registration, login with JWT tokens, roles user/admin. Administrators list the
+accounts, promote a user, delete an account and read the connection history; they also start the
+NASA update and reset the database. & Done \
+F2 & Dashboard & Approaches over a chosen period (7 days by default), number of NEOs and share of
+hazardous ones, closest approach, next approach of each favourite. & Done \
+F3 & Search & Criteria: name, diameters, hazard flag, origin, close approach period; sort and
+pagination; detailed view with the approaches in km and astronomical units; CSV export. & Done \
+F4 & Create a NEO & A logged-in user declares a NEO; it is stored with origin \texttt{USER} and is
+never overwritten by the NASA imports. & Done, simplified \
+F5 & Favourites & Add from the search or by id, list, remove; approach history (CSV export) and
+graph of the distance over time (PNG export). & Done \
+F6 & Alerts & Criteria: minimum diameter, maximum distance, hazardous only, combinable; switch
+on/off; notifications shown at login, once per approach. & Done \
+\midrule
+FO3 & Statistics & Approaches per month, size classes, share of hazardous NEOs, mean and median
+distance, each with a short justification. & Done \
+FO7 & Automatic update & Background import when the API starts, then every day. & Done \
+FO8 & Picture of the day & NASA picture of the day of any date, with its description, both
+downloadable. & Done \
+\bottomrule
+\end{tabularx}
+\caption{Features of NEO-Watch and their status}
+\label{tab:features}
+\end{table}
+
+\subsection{Differences with the analysis report}
+
+Three choices of the analysis report were changed during the implementation.
+
+\paragraph{NEO creation (F4).} The analysis planned a moderation step: a user would submit a
+\emph{proposal} and an administrator would accept or reject it. For lack of time, a NEO declared by
+a user is created directly. The \texttt{proposal} table and the \texttt{Proposal} business object
+exist, so the moderation can be added later without changing the data model. The origin
+\texttt{USER} still guarantees that these objects are kept apart from the NASA data: the import
+only updates rows that have a NASA identifier.
+
+\paragraph{Alerts on a given NEO (F6).} The analysis also listed a third criterion, ``a precise NEO
+chosen by the user''. Following a given NEO is already the role of the favourites, so this
+criterion was dropped and the alerts keep the size, distance and hazard criteria.
+
+\paragraph{One notification per approach (F6).} As planned, the alerts are evaluated when the user
+logs in. To avoid repeating the same notification, we kept the idea of the analysis (``save only
+the last criteria asked'') in a simple form: each alert stores the date of its last evaluation,
+and only the approaches recorded after this date can trigger it again.

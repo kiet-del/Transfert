@@ -1,0 +1,38 @@
+\section{Conclusion}
+
+NEO-Watch delivers the six required features and the three optional ones we chose. A user can
+create an account, see what will pass close to the Earth in the coming days, search the objects
+and export them, follow favourites over time and be warned when an object matches their own
+criteria; an administrator manages the accounts and the data, which is kept up to date
+automatically.
+
+\vspace{0.25cm}
+
+The main technical difficulty was not where we expected it. The features themselves were quick
+to write once the data model was fixed; the hard part was the integration: making a long NASA
+import live with an API that must keep answering, sharing a database between threads, handling
+the rate limit of the free NASA key, and making the backend and the frontend agree on every
+answer. Testing the application end to end, and not only each layer alone, is what revealed most
+of the bugs.
+
+\subsection{Limits}
+
+\begin{itemize}
+  \item NEO-Watch only displays and organises NASA's data: it computes no orbit and no impact
+  probability, and its content is only as fresh and as accurate as the NeoWs API.
+  \item With the free \texttt{DEMO\_KEY}, the first import takes several hours, since it is cut
+  by the rate limit; a personal NASA key is needed for a real use.
+  \item NEOs declared by users are not moderated, unlike what the analysis report planned.
+  \item The notifications are only shown inside the application, when the user logs in.
+  \item Passwords are hashed with SHA-256: a slow algorithm made for passwords (bcrypt, Argon2)
+  would resist brute force better.
+\end{itemize}
+
+\subsection{Possible improvements}
+
+\begin{itemize}
+  \item Moderation of the declared NEOs through the \texttt{proposal} table, which already exists.
+  \item Notifications by e-mail, sent after each daily import.
+  \item A user page to change one's e-mail address and password.
+  \item Tests of the Streamlit pages, which are only tested by hand today.
+\end{itemize}

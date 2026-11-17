@@ -1,0 +1,74 @@
+\section{Testing and code quality}
+\label{sec:testing}
+
+\subsection{Unit tests}
+
+The backend has 148 unit tests, written with \texttt{pytest}, in two families.
+
+\begin{itemize}
+  \item \textbf{Service and controller tests} (109 tests) replace the DAOs and the NASA API with
+  mocks (\texttt{unittest.mock}). They need neither a database nor the network, run in a few
+  seconds, and check the business rules: refusal of invalid values, import split into windows of
+  seven days, pause and retry when the NASA rate limit is reached, \emph{partial} import resumed
+  the day after, a single import at a time, rights of a user against an administrator\dots
+  Controller tests call the endpoints with FastAPI's \texttt{TestClient} and replace the
+  logged-in user with \texttt{app.dependency\_overrides}.
+  \item \textbf{DAO tests} (39 tests) run on a real PostgreSQL database, in a dedicated schema,
+  \texttt{project\_test\_dao}, re-created from \texttt{data/pop\_db\_test.sql} at the start of each
+  test session. A guard test checks that they never run on the application schema. Without a
+  database, they are skipped instead of failing, so the other tests can still be run anywhere.
+\end{itemize}
+
+Most tests follow the \emph{given / when / then} structure and cover both the nominal case and
+the error cases (unknown object, duplicate, wrong owner, expired token\dots).
+
+\subsection{Coverage}
+
+The coverage is measured on the service and DAO layers, where the logic is, with branch coverage:
+it reaches \textbf{84\,\%} with all the tests. The lines that are not covered are mainly the
+\texttt{except} blocks of the DAOs that only log a database error before raising it again, and the
+loop of the daily scheduler, which waits 24 hours.
+
+\begin{lstlisting}
+cd backend
+uv run --all-extras coverage run -m pytest
+uv run --all-extras coverage report
+\end{lstlisting}
+
+\subsection{Continuous integration and quality tools}
+
+At each push, a GitHub Actions pipeline (\texttt{.github/workflows/ci.yml}) starts a PostgreSQL
+service, installs the dependencies, runs all the tests with coverage, then checks the backend and
+the frontend with two tools:
+
+\begin{itemize}
+  \item \textbf{Ruff}, for the code style (PEP~8, imports, line length of 100) and the formatting;
+  formatting on save is enabled in the VSCode workspace;
+  \item \textbf{mypy}, which checks that the type annotations are consistent (for instance that a
+  value that can be \texttt{None} is not used as if it could not);
+  \item \textbf{Bandit}, which looks for common security issues (SQL built by string
+  concatenation, hard-coded passwords, requests without timeout\dots).
+\end{itemize}
+
+Every class and public method has a docstring, and the logs record each HTTP request with its
+status and the inputs and outputs of the main methods, with the passwords masked.
+
+\subsection{Final review}
+
+Before the code freeze, the whole application was run end to end on a fresh database and the code
+was reviewed. This review found several bugs, which were fixed, each with a test:
+
+\begin{itemize}
+  \item an expired access token was still accepted, because the token was looked up in the
+  connection history after its signature check had failed; the token could also be passed in the
+  URL, where it ends up in the logs;
+  \item the search and the NEO details could be read without being logged in;
+  \item adding a non-existent NEO to the favourites crashed with an error 500;
+  \item a NEO could be declared with negative diameters or a minimum above the maximum, and a
+  validation error of this kind crashed the error handler itself;
+  \item NEOs declared without a diameter were counted among the objects larger than 1~km;
+  \item the same notification was shown at every login;
+  \item the frontend never used the refresh token, so users were logged out after 30 minutes, and
+  the daily update was only triggered by the frontend, under a condition that blocked it for a
+  year after the first import.
+\end{itemize}

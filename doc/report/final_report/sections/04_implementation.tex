@@ -1,0 +1,126 @@
+\section{Implementation}
+\label{sec:implementation}
+
+This section describes how each feature is implemented, from the database to the interface.
+
+\subsection{F1 -- Accounts and administration}
+
+\texttt{UserService} creates the accounts (role \texttt{user}, username and e-mail unique) and
+checks the passwords at login. A successful login returns the two tokens and is recorded in the
+\texttt{connection} table. The frontend keeps the tokens in the Streamlit session; when the access
+token expires, the HTTP client asks for a new one with the refresh token and sends the request
+again, so the user is not logged out after 30 minutes.
+
+The administrators have a dedicated page. It lists the accounts, promotes a user to the
+\texttt{admin} role, deletes an account (with its favourites and alerts, through
+\texttt{ON DELETE CASCADE}) and shows the connection history of each user. An administrator
+cannot delete their own account, so that at least one administrator always remains. The menu of
+an administrator also shows the date of the last import, a button to start an update and a
+button to reset the database.
+
+\subsection{F2 -- Dashboard}
+
+\texttt{DashboardDao} runs four queries on a period chosen by the user (by default the next seven
+days): the approaches of the period, the number of distinct NEOs and of hazardous ones, the
+closest approach, and the next approach of each favourite of the user. \texttt{DashboardService}
+checks the period and computes the share of hazardous objects.
+
+\subsection{F3 -- Search and details}
+
+\texttt{NeoDao.find} builds the query from the criteria that are given: each criterion adds one
+condition with a named parameter, and the values are always passed to \texttt{psycopg2} as
+parameters, never written into the SQL text, which prevents SQL injection. The \texttt{approach}
+table is only joined when a date criterion is used. The sort column cannot be a SQL parameter, so
+only the columns of a whitelist are accepted. The detailed view lists the approaches with their
+distance in kilometres and in astronomical units; the results and the approaches can be exported
+as CSV, and a NEO can be added to the favourites from this view.
+
+\subsection{F4 -- Declaring a NEO}
+
+A logged-in user gives a name and, optionally, the absolute magnitude, the estimated diameters
+and the hazard flag. The values are checked twice: by the Pydantic schema (positive diameters,
+minimum not above maximum) and by \texttt{NeoService}, so that the rule also holds for any other
+caller of the service. The NEO is stored with origin \texttt{USER} and no NASA identifier.
+
+\subsection{F5 -- Favourites}
+
+\texttt{FavouriteService} checks that the NEO exists before adding it, and an object cannot be
+added twice (primary key \texttt{(user\_id, neo\_id)}). For each favourite, the page shows the
+list of its approaches, exportable as CSV, and a graph of its distance to the Earth over time.
+The graph is drawn by the backend with Matplotlib and sent as a PNG image encoded in base64; the
+page displays it and offers it for download.
+
+\subsection{F6 -- Alerts and notifications}
+
+An alert combines up to three criteria: a minimum diameter, a maximum distance and ``hazardous
+objects only''; at least one is required, and two alerts of the same user cannot have exactly the
+same criteria. A single SQL query finds the future approaches that match the active alerts of a
+user.
+
+The notifications are evaluated when the user logs in, and each approach is notified only once:
+when an alert has matched, its \texttt{last\_eval\_date} is set to the current time of the
+database, and the query only keeps the approaches recorded after that date. Both dates come from
+the database clock, so the comparison does not depend on the time zone of the server. The
+notifications of the session stay visible on the alerts page.
+
+\subsection{FO3 -- Statistics}
+
+\texttt{StatisticsDao} computes, with \texttt{GROUP BY} and aggregate functions, the number of
+approaches per month, the number of NEOs per size class and a summary: number of NEOs, share of
+hazardous ones, mean and median distance (\texttt{PERCENTILE\_CONT}). The size classes follow the
+thresholds used by NASA (25~m, 140~m, 1~km); NEOs declared without a diameter are counted in an
+``unknown'' class. Each statistic is displayed with a short explanation of why it matters, for
+instance why the median describes a typical approach better than the mean.
+
+\subsection{FO7 -- Automatic update}
+
+\texttt{DailyImportScheduler} is started with the API. It starts an import at once, then every
+24~hours, in the name of the first administrator. Each run imports the days missing at the end of
+the one-year window, and re-imports the next 30 days once a day to get the objects discovered
+since the last import (about five calls). The administrator button calls the same code, and a
+lock guarantees that only one import runs at a time; the database cannot be reset while an import
+is running. The automatic import can be turned off with \texttt{AUTO\_IMPORT=false}.
+
+\subsection{FO8 -- Picture of the day}
+
+\texttt{ApodService} calls the NASA APOD API for the chosen day. The page shows the image and its
+description and offers both for download; when NASA publishes a video instead of an image, a link
+to it is shown instead. If NASA is unavailable, the API answers with a clear 503 error instead of
+failing.
+
+\subsection{API endpoints}
+
+\begin{longtable}{l p{5.6cm} p{6.4cm}}
+\caption{Endpoints of the API (full documentation: \texttt{/docs})} \\
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Description} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Method} & \textbf{Path} & \textbf{Description} \\
+\midrule
+\endhead
+POST & \texttt{/login/} & Log in, returns the tokens \\
+POST & \texttt{/login/register} & Create an account \\
+POST & \texttt{/login/refresh} & New tokens from a refresh token \\
+GET & \texttt{/login/me} & Profile of the logged-in user \\
+GET & \texttt{/neo} & List the NEOs (pagination) \\
+POST & \texttt{/neo/search} & Search with criteria \\
+GET & \texttt{/neo/\{neo\_id\}} & Details and approaches of a NEO \\
+POST & \texttt{/neo} & Declare a NEO (origin \texttt{USER}) \\
+GET & \texttt{/dashboard/} & Dashboard of a period \\
+GET & \texttt{/statistics/} & Statistics \\
+GET & \texttt{/apod/} & Picture of the day \\
+POST, DELETE & \texttt{/favourites/\dots} & Add and remove favourites \\
+GET & \texttt{/favourites/user/\{id\}/\dots} & Favourites, their approaches, their graph \\
+POST, GET, PUT, DELETE & \texttt{/alerts/\dots} & Create, list, switch on/off, delete alerts \\
+GET & \texttt{/alerts/user/\{id\}/notifications} & New notifications \\
+POST & \texttt{/import/update} & Start the NASA update (admin) \\
+GET & \texttt{/import/status}, \texttt{/import/last} & Running import, end of the last import \\
+POST & \texttt{/reset\_database} & Re-create the database (admin) \\
+GET & \texttt{/users/} & List the accounts (admin) \\
+PUT & \texttt{/users/\{id\}/admin} & Promote to administrator (admin) \\
+DELETE & \texttt{/users/\{id\}} & Delete an account (admin) \\
+GET & \texttt{/users/\{id\}/connections} & Connection history (admin) \\
+\bottomrule
+\end{longtable}

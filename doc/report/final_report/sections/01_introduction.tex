@@ -1,0 +1,23 @@
+\section{Introduction}
+
+Near-Earth Objects (NEOs) are asteroids and comets whose orbit brings them close to the Earth.
+NASA publishes their characteristics and their close approaches through the NeoWs API, but this
+raw data is not organised for a non-specialist: finding the objects that will pass close to the
+Earth next week, following a given asteroid over time or being warned when a large object comes
+close all require some processing.
+
+\vspace{0.25cm}
+
+NEO-Watch is a web application that answers these needs. It imports the NASA data into its own
+PostgreSQL database, exposes it through a REST API written with FastAPI, and offers a Streamlit
+interface where each user has an account, a dashboard, favourite objects and personal alerts.
+
+\vspace{0.25cm}
+
+The analysis report, submitted in September, defined the scope, the features and the design of
+the application. This final report describes what was actually built. Section~\ref{sec:specs}
+compares the delivered features with the specifications. Section~\ref{sec:architecture} presents
+the architecture and the main design choices, and section~\ref{sec:implementation} the
+implementation of each feature. Section~\ref{sec:testing} describes the tests and the quality
+tools, section~\ref{sec:organization} the organisation of the team, and the conclusion reviews the
+results, the limits and the possible improvements. The individual assessments are in appendix.

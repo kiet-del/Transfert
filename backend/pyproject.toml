@@ -1,0 +1,80 @@
+[project]
+name = "neo-watch-backend"
+version = "0.1.0"
+description = "NEO-Watch REST API (FastAPI): Near-Earth Objects from the NASA NeoWs API"
+authors = [{ name = "NEO-Watch team - ENSAI 2A IT project" }]
+requires-python = ">=3.13"
+
+dependencies = [
+    "fastapi",
+    "inquirerPy",
+    "psycopg2-binary",
+    "python-dotenv",
+    "pydantic[email]",
+    "PyYAML",
+    "requests",
+    "regex",
+    "uvicorn",
+    "matplotlib>=3.11.2",
+    "pyjwt>=2.15.1",
+    "python-multipart>=0.0.33",
+]
+
+# Dependencies used only for development, not for runtime
+[project.optional-dependencies]
+dev = [
+    "bandit",
+    "coverage",
+    "httpx",
+    "mypy",
+    "pylint",
+    "pytest",
+    "ruff",
+    # type information of libraries that have none, for mypy
+    "types-psycopg2",
+    "types-PyYAML",
+    "types-requests",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" } # source files are in folder src
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["B008", "E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+# The code is in src/: mypy must read it there. Otherwise it finds the copy
+# installed by "uv sync" in .venv and skips it ("missing library stubs or py.typed marker")
+mypy_path = "src"
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+python_files = ["*test*.py"]
+addopts = "-v -s -x"
+
+[tool.coverage.run]
+branch = true
+include = ["src/service/*", "src/dao/*"]
+omit = ["*/__init__.py"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.coverage.html]
+directory = "coverage_report"

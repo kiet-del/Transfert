@@ -1,0 +1,54 @@
+[project]
+name = "neo-watch-frontend"
+version = "0.1.0"
+description = "NEO-Watch user interface (Streamlit)"
+authors = [{ name = "NEO-Watch team - ENSAI 2A IT project" }]
+requires-python = ">=3.13"
+
+dependencies = ["pandas", "python-dotenv", "PyYAML", "requests", "streamlit"]
+
+[project.optional-dependencies]
+dev = [
+    "bandit",
+    "coverage",
+    "mypy",
+    "pylint",
+    "pytest",
+    "ruff",
+    # type information of libraries that have none, for mypy
+    "pandas-stubs",
+    "types-PyYAML",
+    "types-requests",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+# The code is in src/: mypy must read it there. Otherwise it finds the copy
+# installed by "uv sync" in .venv and skips it ("missing library stubs or py.typed marker")
+mypy_path = "src"
+explicit_package_bases = true
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+python_files = ["*test*.py"]
+addopts = "-v -s"

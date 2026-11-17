@@ -1,0 +1,40 @@
+\section{Installation and launch}
+
+The full procedure is in the README at the root of the repository. In short, on SSP Cloud, with a
+PostgreSQL service and a VSCode service (ports 5000 and 8000 open):
+
+\begin{lstlisting}
+git clone https://github.com/dennivalentin/projet_info_2A.git
+cd projet_info_2A
+uv sync --project backend
+uv sync --project frontend
+# create the .env file (see the README), then, in two terminals:
+uv run --project backend python backend/src/main.py
+cd frontend && uv run streamlit run src/app.py
+\end{lstlisting}
+
+On its first start, the API creates the tables and two accounts, \texttt{admin} (administrator)
+and \texttt{observateur} (user), whose password is their username, then starts the NASA import in
+the background.
+
+% ---------------------------------------------------------------------------
+% Individual assessments: each member writes their own part.
+% Suggested content (half a page each): what you did, what you learned,
+% the difficulties you met, and what you would do differently.
+% ---------------------------------------------------------------------------
+
+\section{Individual assessment -- Sofia Bounaga}
+
+\textit{To be written by Sofia Bounaga.}
+
+\section{Individual assessment -- Yalalt Schneider}
+
+\textit{To be written by Yalalt Schneider.}
+
+\section{Individual assessment -- Valentin Denni}
+
+\textit{To be written by Valentin Denni.}
+
+\section{Individual assessment -- Mohammed-adam Lakhrissi}
+
+\textit{To be written by Mohammed-adam Lakhrissi.}
